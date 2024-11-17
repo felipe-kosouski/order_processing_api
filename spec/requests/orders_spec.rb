@@ -7,11 +7,12 @@ RSpec.describe "Orders", type: :request do
     end
   end
   let(:valid_file) { fixture_file_upload('test_file.txt', 'text/plain') }
+  let(:malformed_file) { fixture_file_upload('malformed_test_file.txt', 'text/plain') }
+  let(:empty_file) { fixture_file_upload('empty_test_file.txt', 'text/plain') }
 
   describe "GET /orders" do
     it 'returns orders with the correct structure' do
       get '/orders'
-      json_response = JSON.parse(response.body)
       expect(json_response.first.keys).to match_array(%w[user_id name orders])
       expect(json_response.first['orders'].first.keys).to match_array(%w[order_id total date products])
       expect(json_response.first['orders'].first['products'].first.keys).to match_array(%w[product_id value])
@@ -21,30 +22,81 @@ RSpec.describe "Orders", type: :request do
       context "when filtering by order_id" do
         before { get '/orders', params: { order_id: orders.first.order_id } }
 
-        it "returns the matching order" do
-          json_response = JSON.parse(response.body)
-          expect(json_response).not_to be_empty
-          expect(json_response.size).to eq(1)
-          expect(json_response.first['user_id']).to eq(orders.first.user_id)
-          expect(json_response.first['orders'].first['order_id']).to eq(orders.first.order_id)
+        context "when the order_id exists" do
+          it "returns the matching order" do
+            expect(json_response).not_to be_empty
+            expect(json_response.size).to eq(1)
+            expect(json_response.first['user_id']).to eq(orders.first.user_id)
+            expect(json_response.first['orders'].first['order_id']).to eq(orders.first.order_id)
+          end
+
+          it "returns status code 200" do
+            expect(response).to have_http_status(200)
+          end
         end
 
-        it "returns status code 200" do
-          expect(response).to have_http_status(200)
+        context "when the order_id does not exist" do
+          before { get '/orders', params: { order_id: 1234567890 } }
+
+          it "returns an empty array" do
+            expect(json_response).to be_empty
+          end
+
+          it "returns status code 200" do
+            expect(response).to have_http_status(200)
+          end
         end
       end
 
       context "when filtering by date range" do
-        before { get '/orders', params: { start_date: (Date.current - 4.days).to_s, end_date: (Date.current).to_s } }
+        context "when date range is valid" do
+          before { get '/orders', params: { start_date: (Date.current - 4.days).to_s, end_date: (Date.current).to_s } }
 
-        it "returns orders" do
-          json_response = JSON.parse(response.body)
-          expect(json_response).not_to be_empty
-          expect(json_response.size).to eq(4)
+          it "returns orders" do
+            expect(json_response).not_to be_empty
+            expect(json_response.size).to eq(4)
+          end
+
+          it "returns status code 200" do
+            expect(response).to have_http_status(200)
+          end
         end
 
-        it "returns status code 200" do
-          expect(response).to have_http_status(200)
+        context "when date range is invalid" do
+          before { get '/orders', params: { start_date: 'invalid', end_date: 'invalid' } }
+
+          it "returns an error message" do
+            expect(json_response['message']).to eq("Invalid date format")
+          end
+
+          it "returns status code 422" do
+            expect(response).to have_http_status(422)
+          end
+        end
+
+        context "when end_date is missing" do
+          before { get '/orders', params: { start_date: (Date.current - 4.days).to_s } }
+
+          it "returns orders" do
+            expect(json_response).not_to be_empty
+            expect(json_response.size).to eq(4)
+          end
+
+          it "returns status code 200" do
+            expect(response).to have_http_status(200)
+          end
+        end
+
+        context "when no orders are found within the date range" do
+          before { get '/orders', params: { start_date: (Date.current + 1.day).to_s, end_date: (Date.current + 2.days).to_s } }
+
+          it "returns an empty array" do
+            expect(json_response).to be_empty
+          end
+
+          it "returns status code 200" do
+            expect(response).to have_http_status(200)
+          end
         end
       end
     end
@@ -53,7 +105,6 @@ RSpec.describe "Orders", type: :request do
       before { get '/orders' }
 
       it "returns orders" do
-        json_response = JSON.parse(response.body)
         expect(json_response).not_to be_empty
         expect(json_response.size).to eq(orders.size)
       end
@@ -66,17 +117,64 @@ RSpec.describe "Orders", type: :request do
 
   describe "POST /orders/upload" do
     context "when file is provided" do
-
       context "when file is valid" do
         before { post '/orders/upload', params: { file: valid_file } }
 
         it "returns a success message" do
-          json_response = JSON.parse(response.body)
           expect(json_response['message']).to eq("File processed successfully")
         end
 
         it "returns status code 200" do
           expect(response).to have_http_status(200)
+        end
+      end
+
+      context "when file is malformed" do
+        it "does not create any orders" do
+          expect { post '/orders/upload', params: { file: malformed_file } }.not_to change { Order.count }
+        end
+
+        it "returns a success message" do
+          post '/orders/upload', params: { file: malformed_file }
+          expect(json_response['message']).to eq("File processed successfully")
+        end
+
+        it "returns status code 200" do
+          post '/orders/upload', params: { file: malformed_file }
+          expect(response).to have_http_status(200)
+        end
+      end
+
+      context "when file is empty" do
+        it "does not create any orders" do
+          expect { post '/orders/upload', params: { file: empty_file } }.not_to change { Order.count }
+        end
+
+        it "returns a success message" do
+          post '/orders/upload', params: { file: empty_file }
+          expect(json_response['message']).to eq("File processed successfully")
+        end
+
+        it "returns status code 200" do
+          post '/orders/upload', params: { file: empty_file }
+          expect(response).to have_http_status(200)
+        end
+      end
+
+      context "when the file has an invalid format" do
+        let(:invalid_format_file) { fixture_file_upload('invalid_format_file.csv', 'text/csv') }
+
+        it "returns an error" do
+          post '/orders/upload', params: { file: invalid_format_file }
+          expect(json_response['message']).to eq("Invalid file format")
+        end
+      end
+
+      context "when the file contains duplicate orders" do
+        let(:duplicate_file) { fixture_file_upload('duplicate_test_file.txt', 'text/plain') }
+
+        it "creates only unique orders" do
+          expect { post '/orders/upload', params: { file: duplicate_file } }.to change { Order.count }.by(1)
         end
       end
     end
@@ -85,7 +183,6 @@ RSpec.describe "Orders", type: :request do
       before { post '/orders/upload' }
 
       it "returns an error message" do
-        json_response = JSON.parse(response.body)
         expect(json_response['message']).to eq("File not provided")
       end
 
