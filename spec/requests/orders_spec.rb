@@ -63,14 +63,32 @@ RSpec.describe "Orders", type: :request do
         end
 
         context "when date range is invalid" do
-          before { get '/orders', params: { start_date: 'invalid', end_date: 'invalid' } }
+          context "when start_date is invalid" do
+            subject { get '/orders', params: { start_date: 'invalid', end_date: (Date.current - 4.days).to_s } }
 
-          it "returns an error message" do
-            expect(json_response['message']).to eq("Invalid date format")
+            it "returns an error message" do
+              subject
+              expect(json_response['message']).to eq("start_date has an invalid date format")
+            end
+
+            it "returns status code 422" do
+              subject
+              expect(response).to have_http_status(422)
+            end
           end
 
-          it "returns status code 422" do
-            expect(response).to have_http_status(422)
+          context "when end_date is invalid" do
+            subject { get '/orders', params: { start_date: (Date.current - 4.days).to_s, end_date: 'invalid' } }
+
+            it "returns an error message" do
+              subject
+              expect(json_response['message']).to eq("end_date has an invalid date format")
+            end
+
+            it "returns status code 422" do
+              subject
+              expect(response).to have_http_status(422)
+            end
           end
         end
 
@@ -166,7 +184,7 @@ RSpec.describe "Orders", type: :request do
 
         it "returns an error" do
           post '/orders/upload', params: { file: invalid_format_file }
-          expect(json_response['message']).to eq("Invalid file format")
+          expect(json_response['message']).to eq("Error processing file: Invalid file format")
         end
       end
 
