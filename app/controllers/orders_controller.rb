@@ -1,8 +1,12 @@
 class OrdersController < ApplicationController
+  include Pagy::Backend
+  after_action { pagy_headers_merge(@pagy) if @pagy }
 
   def index
     filtered_orders = OrderFilter.new(params, Order.all).call
-    grouped_orders = filtered_orders.group_by(&:user_id)
+    @pagy, paginated_orders = pagy(filtered_orders, limit: params[:per_page] || 10)
+    grouped_orders = paginated_orders.group_by(&:user_id)
+
     render json: serialize_orders(grouped_orders), status: :ok
   rescue => e
     render json: { message: "#{e.message}" }, status: :unprocessable_content

@@ -11,6 +11,26 @@ RSpec.describe "Orders", type: :request do
   let(:empty_file) { fixture_file_upload('empty_test_file.txt', 'text/plain') }
 
   describe "GET /orders" do
+
+    context "with pagination" do
+      it "returns paginated orders" do
+        get '/orders', params: { page: 1, per_page: 5 }
+        expect(json_response.size).to eq(5)
+      end
+
+      it "includes pagination metadata in headers" do
+        get '/orders', params: { page: 1, per_page: 10 }
+
+        expect(response).to have_http_status(:ok)
+
+        expect(response.headers).to have_key('current-page')
+        expect(response.headers).to have_key('page-items')
+        expect(response.headers).to have_key('total-pages')
+        expect(response.headers).to have_key('total-count')
+        expect(response.headers).to have_key('link')
+      end
+    end
+
     it 'returns orders with the correct structure' do
       get '/orders'
       expect(json_response.first.keys).to match_array(%w[user_id name orders])
