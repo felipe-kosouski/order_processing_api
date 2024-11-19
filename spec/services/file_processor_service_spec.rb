@@ -5,11 +5,11 @@ RSpec.describe FileProcessorService, type: :service do
   let(:large_file) { fixture_file_upload('large_test_file.txt', 'text/plain') }
 
   describe "#process" do
-    it "calls save_batch when batch size is reached" do
+    it "calls enqueue_batch when batch size is reached" do
       service = FileProcessorService.new(large_file)
-      allow(service).to receive(:save_batch).and_call_original
+      allow(service).to receive(:enqueue_batch).and_call_original
       service.process
-      expect(service).to have_received(:save_batch).at_least(:once)
+      expect(service).to have_received(:enqueue_batch).at_least(:once)
     end
 
     it "logs an error when an exception occurs while processing a line" do
@@ -20,10 +20,18 @@ RSpec.describe FileProcessorService, type: :service do
     end
 
     it "continues processing lines even when a batch contains duplicates" do
-      service = FileProcessorService.new(valid_file)
+      service = FileProcessorService.new(large_file)
       allow(Order).to receive(:insert_all).and_raise(ActiveRecord::RecordNotUnique, "Duplicate records")
-      expect(Rails.logger).to receive(:error).with(/Duplicate records detected/)
+      allow_any_instance_of(ActiveSupport::BroadcastLogger).to receive(:error).with(/Duplicate records detected/)
       expect { service.process }.not_to raise_error
+    end
+
+    it "enqueues jobs for each batch" do
+      service = FileProcessorService.new(large_file)
+
+      expect {
+        service.process
+      }.to have_enqueued_job(ProcessOrderBatchInsertJob).exactly(2).times
     end
   end
 end

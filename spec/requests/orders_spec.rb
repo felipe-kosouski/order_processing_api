@@ -1,4 +1,5 @@
 require 'rails_helper'
+include ActiveJob::TestHelper
 
 RSpec.describe "Orders", type: :request do
   let!(:orders) do
@@ -215,7 +216,11 @@ RSpec.describe "Orders", type: :request do
         let(:duplicate_file) { fixture_file_upload('duplicate_test_file.txt', 'text/plain') }
 
         it "creates only unique orders" do
-          expect { post path, params: { file: duplicate_file } }.to change { Order.count }.by(1)
+          expect {
+            perform_enqueued_jobs do
+              post path, params: { file: duplicate_file }
+            end
+          }.to change { Order.count }.by(1)
         end
       end
     end

@@ -14,7 +14,7 @@ class FileProcessorService
       begin
         batch << parse_line(line)
         if batch.size >= BATCH_SIZE
-          save_batch(batch)
+          enqueue_batch(batch)
           batch.clear
         end
       rescue StandardError => e
@@ -22,17 +22,15 @@ class FileProcessorService
         next
       end
     end
-    save_batch(batch) unless batch.empty?
+    enqueue_batch(batch) unless batch.empty?
   end
 
   private
 
-  def save_batch(batch)
-    begin
-      Order.insert_all(batch, unique_by: [ :user_id, :order_id, :product_id ])
-    rescue ActiveRecord::RecordNotUnique => e
-      Rails.logger.error("Duplicate records detected: #{e.message}")
-    end
+  def enqueue_batch(batch)
+    ProcessOrderBatchInsertJob.perform_later(batch)
+  rescue ActiveRecord::RecordNotUnique => e
+    Rails.logger.error("Duplicate records detected: #{e.message}")
   end
 
   def valid_file_format?
