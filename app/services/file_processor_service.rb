@@ -1,4 +1,6 @@
 class FileProcessorService
+  BATCH_SIZE = 1000
+
   def initialize(file)
     @file = file
   end
@@ -6,32 +8,35 @@ class FileProcessorService
   def process
     raise "Invalid file format" unless valid_file_format?
 
+    batch = []
     File.foreach(@file.path, chomp: true).with_index do |line, index|
       next if line.strip.empty?
       begin
-        parse_and_save(line)
+        batch << parse_line(line)
+        if batch.size >= BATCH_SIZE
+          save_batch(batch)
+          batch.clear
+        end
       rescue StandardError => e
         Rails.logger.error("Error processing line #{index + 1}: #{e.message}")
         next
       end
     end
+    save_batch(batch) unless batch.empty?
   end
 
   private
 
-  def valid_file_format?
-    @file.content_type == "text/plain"
+  def save_batch(batch)
+    begin
+      Order.insert_all(batch, unique_by: [ :user_id, :order_id, :product_id ])
+    rescue ActiveRecord::RecordNotUnique => e
+      Rails.logger.error("Duplicate records detected: #{e.message}")
+    end
   end
 
-  def parse_and_save(line)
-    parsed_data = parse_line(line)
-    Order.find_or_create_by!(
-      user_id: parsed_data[:user_id],
-      order_id: parsed_data[:order_id],
-      product_id: parsed_data[:product_id]
-    ) do |order|
-      order.attributes = parsed_data
-    end
+  def valid_file_format?
+    @file.content_type == "text/plain"
   end
 
   def parse_line(line)
