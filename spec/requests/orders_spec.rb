@@ -11,15 +11,16 @@ RSpec.describe "Orders", type: :request do
   let(:empty_file) { fixture_file_upload('empty_test_file.txt', 'text/plain') }
 
   describe "GET /orders" do
+    let(:path) { '/orders' }
 
     context "with pagination" do
       it "returns paginated orders" do
-        get '/orders', params: { page: 1, per_page: 5 }
+        get path, params: { page: 1, per_page: 5 }
         expect(json_response.size).to eq(5)
       end
 
       it "includes pagination metadata in headers" do
-        get '/orders', params: { page: 1, per_page: 10 }
+        get path, params: { page: 1, per_page: 10 }
 
         expect(response).to have_http_status(:ok)
 
@@ -32,7 +33,7 @@ RSpec.describe "Orders", type: :request do
     end
 
     it 'returns orders with the correct structure' do
-      get '/orders'
+      get path
       expect(json_response.first.keys).to match_array(%w[user_id name orders])
       expect(json_response.first['orders'].first.keys).to match_array(%w[order_id total date products])
       expect(json_response.first['orders'].first['products'].first.keys).to match_array(%w[product_id value])
@@ -40,7 +41,7 @@ RSpec.describe "Orders", type: :request do
 
     context "when filters are provided" do
       context "when filtering by order_id" do
-        before { get '/orders', params: { order_id: orders.first.order_id } }
+        before { get path, params: { order_id: orders.first.order_id } }
 
         context "when the order_id exists" do
           it "returns the matching order" do
@@ -56,7 +57,7 @@ RSpec.describe "Orders", type: :request do
         end
 
         context "when the order_id does not exist" do
-          before { get '/orders', params: { order_id: 1234567890 } }
+          before { get path, params: { order_id: 1234567890 } }
 
           it "returns an empty array" do
             expect(json_response).to be_empty
@@ -70,7 +71,7 @@ RSpec.describe "Orders", type: :request do
 
       context "when filtering by date range" do
         context "when date range is valid" do
-          before { get '/orders', params: { start_date: (Date.current - 4.days).to_s, end_date: (Date.current).to_s } }
+          before { get path, params: { start_date: (Date.current - 4.days).to_s, end_date: (Date.current).to_s } }
 
           it "returns orders" do
             expect(json_response).not_to be_empty
@@ -84,7 +85,7 @@ RSpec.describe "Orders", type: :request do
 
         context "when date range is invalid" do
           context "when start_date is invalid" do
-            subject { get '/orders', params: { start_date: 'invalid', end_date: (Date.current - 4.days).to_s } }
+            subject { get path, params: { start_date: 'invalid', end_date: (Date.current - 4.days).to_s } }
 
             it "returns an error message" do
               subject
@@ -98,7 +99,7 @@ RSpec.describe "Orders", type: :request do
           end
 
           context "when end_date is invalid" do
-            subject { get '/orders', params: { start_date: (Date.current - 4.days).to_s, end_date: 'invalid' } }
+            subject { get path, params: { start_date: (Date.current - 4.days).to_s, end_date: 'invalid' } }
 
             it "returns an error message" do
               subject
@@ -113,7 +114,7 @@ RSpec.describe "Orders", type: :request do
         end
 
         context "when end_date is missing" do
-          before { get '/orders', params: { start_date: (Date.current - 4.days).to_s } }
+          before { get path, params: { start_date: (Date.current - 4.days).to_s } }
 
           it "returns orders" do
             expect(json_response).not_to be_empty
@@ -126,7 +127,7 @@ RSpec.describe "Orders", type: :request do
         end
 
         context "when no orders are found within the date range" do
-          before { get '/orders', params: { start_date: (Date.current + 1.day).to_s, end_date: (Date.current + 2.days).to_s } }
+          before { get path, params: { start_date: (Date.current + 1.day).to_s, end_date: (Date.current + 2.days).to_s } }
 
           it "returns an empty array" do
             expect(json_response).to be_empty
@@ -140,7 +141,7 @@ RSpec.describe "Orders", type: :request do
     end
 
     context "when no filters are provided" do
-      before { get '/orders' }
+      before { get path }
 
       it "returns orders" do
         expect(json_response).not_to be_empty
@@ -154,9 +155,11 @@ RSpec.describe "Orders", type: :request do
   end
 
   describe "POST /orders/upload" do
+    let(:path) { '/orders/upload' }
+
     context "when file is provided" do
       context "when file is valid" do
-        before { post '/orders/upload', params: { file: valid_file } }
+        before { post path, params: { file: valid_file } }
 
         it "returns a success message" do
           expect(json_response['message']).to eq("File processed successfully")
@@ -169,32 +172,32 @@ RSpec.describe "Orders", type: :request do
 
       context "when file is malformed" do
         it "does not create any orders" do
-          expect { post '/orders/upload', params: { file: malformed_file } }.not_to change { Order.count }
+          expect { post path, params: { file: malformed_file } }.not_to change { Order.count }
         end
 
         it "returns a success message" do
-          post '/orders/upload', params: { file: malformed_file }
+          post path, params: { file: malformed_file }
           expect(json_response['message']).to eq("File processed successfully")
         end
 
         it "returns status code 200" do
-          post '/orders/upload', params: { file: malformed_file }
+          post path, params: { file: malformed_file }
           expect(response).to have_http_status(200)
         end
       end
 
       context "when file is empty" do
         it "does not create any orders" do
-          expect { post '/orders/upload', params: { file: empty_file } }.not_to change { Order.count }
+          expect { post path, params: { file: empty_file } }.not_to change { Order.count }
         end
 
         it "returns a success message" do
-          post '/orders/upload', params: { file: empty_file }
+          post path, params: { file: empty_file }
           expect(json_response['message']).to eq("File processed successfully")
         end
 
         it "returns status code 200" do
-          post '/orders/upload', params: { file: empty_file }
+          post path, params: { file: empty_file }
           expect(response).to have_http_status(200)
         end
       end
@@ -203,7 +206,7 @@ RSpec.describe "Orders", type: :request do
         let(:invalid_format_file) { fixture_file_upload('invalid_format_file.csv', 'text/csv') }
 
         it "returns an error" do
-          post '/orders/upload', params: { file: invalid_format_file }
+          post path, params: { file: invalid_format_file }
           expect(json_response['message']).to eq("Error processing file: Invalid file format")
         end
       end
@@ -212,13 +215,13 @@ RSpec.describe "Orders", type: :request do
         let(:duplicate_file) { fixture_file_upload('duplicate_test_file.txt', 'text/plain') }
 
         it "creates only unique orders" do
-          expect { post '/orders/upload', params: { file: duplicate_file } }.to change { Order.count }.by(1)
+          expect { post path, params: { file: duplicate_file } }.to change { Order.count }.by(1)
         end
       end
     end
 
     context "when no file is provided" do
-      before { post '/orders/upload' }
+      before { post path }
 
       it "returns an error message" do
         expect(json_response['message']).to eq("File not provided")
