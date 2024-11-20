@@ -65,7 +65,7 @@ Rails.application.configure do
 
   # Use a real queuing backend for Active Job (and separate queues per environment).
   # config.active_job.queue_adapter = :resque
-  # config.active_job.queue_name_prefix = "luiza_labs_jsonify_production"
+  # config.active_job.queue_name_prefix = "order_processing_api_production"
 
   # Disable caching for Action Mailer templates even if Action Controller
   # caching is enabled.
