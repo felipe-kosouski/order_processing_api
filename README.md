@@ -241,7 +241,7 @@ Cobertura inclui:
 * Testes de integracão para endpoints
 * Testes de cenário para manuseio de duplicatas e erros.
 
-O arquivo de coverage pode ser encontrado em `coverage/index.html`.
+Após rodar os testes, o arquivo de coverage pode ser encontrado em `coverage/index.html`.
 
 ### Monitoramento
 A aplicação está configurada para enviar logs e métricas para o Datadog.
