@@ -3,7 +3,7 @@ class ProcessOrderBatchInsertJob < ApplicationJob
 
   def perform(batch)
     ActiveRecord::Base.transaction do
-      Order.insert_all(batch, unique_by: [ :user_id, :order_id, :product_id ])
+      insert_batch(batch)
     end
   rescue ActiveRecord::RecordNotUnique => e
     handle_duplicates(batch, e)
@@ -41,7 +41,7 @@ class ProcessOrderBatchInsertJob < ApplicationJob
 
   def retry_insert(unique_records)
     ActiveRecord::Base.transaction do
-      Order.insert_all(unique_records, unique_by: [ :user_id, :order_id, :product_id ])
+      insert_batch(unique_records)
     end
     Rails.logger.info("Successfully retried and inserted #{unique_records.size} records.")
   rescue ActiveRecord::RecordNotUnique => e
