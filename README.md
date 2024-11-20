@@ -259,4 +259,5 @@ Caso queira visualizar logs e métricas:
 * Adicionar mais métricas e logs.
 * Adicionar maior flexibilidade para consultas com mais filtros.
 * Adicionar suporte a novos formatos de arquivo.
+* Deploy automático utilizando CI/CD e containers.
 
