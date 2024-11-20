@@ -149,6 +149,14 @@
           null
         ]
       },
+      "/Users/felipekosouski/Workspace/projects/luiza_labs_jsonify/config/initializers/datadog.rb": {
+        "lines": [
+          1,
+          null,
+          1,
+          null
+        ]
+      },
       "/Users/felipekosouski/Workspace/projects/luiza_labs_jsonify/config/initializers/filter_parameter_logging.rb": {
         "lines": [
           null,
@@ -1043,6 +1051,6 @@
         ]
       }
     },
-    "timestamp": 1732073586
+    "timestamp": 1732076436
   }
 }

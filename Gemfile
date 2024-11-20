@@ -9,6 +9,7 @@ gem "pagy"
 gem "rack-attack"
 gem "sidekiq"
 gem "redis"
+gem "datadog", require: "datadog/auto_instrument"
 
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
