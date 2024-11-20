@@ -15,8 +15,9 @@ class OrdersController < ApplicationController
   def upload
     file = params[:file]
     if file.present?
-      FileProcessorService.new(file).process
-      render json: { message: "File processed successfully" }, status: :ok
+      file_processor_service = FileProcessorService.new(file)
+      file_processor_service.process
+      render json: { message: "File processed successfully", total_lines: file_processor_service.total_lines, batch_count: file_processor_service.batch_count }, status: :ok
     else
       render json: { message: "File not provided" }, status: :unprocessable_content
     end

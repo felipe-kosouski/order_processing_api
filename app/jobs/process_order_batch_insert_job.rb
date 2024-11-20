@@ -2,7 +2,8 @@ class ProcessOrderBatchInsertJob < ApplicationJob
   queue_as :default
 
   def perform(batch)
-    insert_batch(batch)
+    inserted_count = insert_batch(batch)
+    Rails.logger.info("Successfully inserted #{inserted_count} records.")
   rescue ActiveRecord::RecordNotUnique => e
     handle_duplicates(batch, e)
   rescue StandardError => e
@@ -16,7 +17,8 @@ class ProcessOrderBatchInsertJob < ApplicationJob
 
   def insert_batch(batch)
     ActiveRecord::Base.transaction do
-      Order.insert_all(batch, unique_by: [ :user_id, :order_id, :product_id ])
+      result = Order.insert_all(batch, unique_by: [ :user_id, :order_id, :product_id ])
+      result.count
     end
   end
 
@@ -40,8 +42,8 @@ class ProcessOrderBatchInsertJob < ApplicationJob
   end
 
   def retry_insert(unique_records)
-    insert_batch(unique_records)
-    Rails.logger.info("Successfully retried and inserted #{unique_records.size} records.")
+    retried_count = insert_batch(unique_records)
+    Rails.logger.info("Successfully retried and inserted #{retried_count} records.")
   rescue ActiveRecord::RecordNotUnique => e
     Rails.logger.error("Duplicate records detected on retry: #{e.message}")
   end

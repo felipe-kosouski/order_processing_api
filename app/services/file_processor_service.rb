@@ -1,8 +1,12 @@
 class FileProcessorService
   BATCH_SIZE = 1000
 
+  attr_reader :total_lines, :batch_count
+
   def initialize(file)
     @file = file
+    @total_lines = 0
+    @batch_count = 0
   end
 
   def process
@@ -23,11 +27,13 @@ class FileProcessorService
       end
     end
     enqueue_batch(batch) unless batch.empty?
+    @total_lines = (@batch_count * BATCH_SIZE) + batch.size
   end
 
   private
 
   def enqueue_batch(batch)
+    @batch_count += 1
     ProcessOrderBatchInsertJob.perform_later(batch)
   end
 

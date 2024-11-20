@@ -121,7 +121,9 @@ curl -X POST -F "file=@/path/to/file.txt" http://localhost:3000/orders/upload
 #### Exemplo de resposta
 ```json
 {
-  "message": "File processed successfully"
+  "message": "File processed successfully",
+  "total_lines": 3352,
+  "batch_count": 3
 }
 ```
 
@@ -235,6 +237,11 @@ Os testes foram escritos utilizando RSpec e podem ser rodados com o comando `rsp
 ```bash
 bundle exec rspec
 ```
+
+### Segurança
+A aplicação foi desenvolvida com segurança em mente, utilizando boas práticas de segurança, como:
+* Utilização da Gem Brakeman para identificar possíveis vulnerabilidades.
+* Utilização da gem Rack::Attack para proteção contra ataques de força bruta.
 
 Cobertura inclui:
 * Testes de unidade para models e serviços
