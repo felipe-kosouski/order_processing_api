@@ -29,8 +29,6 @@ class FileProcessorService
 
   def enqueue_batch(batch)
     ProcessOrderBatchInsertJob.perform_later(batch)
-  rescue ActiveRecord::RecordNotUnique => e
-    Rails.logger.error("Duplicate records detected: #{e.message}")
   end
 
   def valid_file_format?

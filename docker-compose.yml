@@ -46,7 +46,7 @@ services:
   datadog:
     image: "datadog/agent:latest"
     environment:
-      - DD_API_KEY=<API_KEY>
+      - DD_API_KEY=<5e57a74f17f53b0adde4a9f986876779>
       - DD_SITE=us5.datadoghq.com
       - DD_ENV=development
       - DD_SERVICE=luiza_labs_jsonify
