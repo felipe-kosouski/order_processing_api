@@ -46,4 +46,3 @@ class ProcessOrderBatchInsertJob < ApplicationJob
     Rails.logger.error("Duplicate records detected on retry: #{e.message}")
   end
 end
-

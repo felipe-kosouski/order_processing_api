@@ -43,5 +43,4 @@ RSpec.describe "Rack::Attack Throttling", type: :request do
       expect(JSON.parse(response.body)['message']).to eq("Rate limit exceeded. Try again later.")
     end
   end
-
 end

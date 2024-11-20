@@ -1,5 +1,4 @@
 class UserOrdersSerializer
-
   def initialize(user_id, orders)
     @user_id = user_id
     @orders = orders
